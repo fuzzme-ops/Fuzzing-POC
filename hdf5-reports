@@ -1,3 +1,223 @@
-## Description
+Description
 HDF5 is a data model, library, and file format for storing and managing data. It supports an unlimited variety of datatypes, and is designed for flexible and efficient I/O and for high volume and complex data. HDF5 is portable and is extensible, allowing applications to evolve in their use of HDF5. The HDF5 Technology suite includes tools and applications for managing, manipulating, viewing, and analyzing data in the HDF5 format. link: https://portal.hdfgroup.org/display/HDF5/HDF5
+
+Below are reported vulnerabilities along with Internal Jira bug ID.
+Heap Buffer Overflow in h5stat 1.10.5  -  HDFFV-10921 
+h5dump (1.10.5) SEGV in function H5T_vlen_reclaim_recurse  - HDFFV-10922
+Heap Buffer Overflow in h5dump 1.10.5 H5HG_read  - HDFFV-10293
+Heap Buffer Overflow in h5ls 1.10.  - HDFFV-10924
+h5repack (1.10.5) SEGV in function H5F__close - HDFFV-10926
+h5repack (1.10.5) SEGV in function H5T_close_real  - HDFFV-10927
+h5repack (1.10.5) Double Free in function H5MM_xfree - HDFFV-10928
+
+Lets look at write-up of each bugs.
+
+*** Heap Buffer Overflow in h5stat 1.10.5  -  HDFFV-10921 ***
+We found the Heap Buffer Overflow in h5stat 1.10.5 version. I have attached the detailed output of crash and testcase file too.
+
+Compilation steps
+CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
+AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
+Test System:  Ubuntu 16 (4.4.0-87-generic)
+
+**ASAN Output**
+fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$ ./h5stat -V
+h5stat: Version 1.10.5
+
+fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$ ./h5stat testcase-1570044709-4-8461_h5ex_g_corder.h5
+Filename: testcase-1570044709-4-8461_h5ex_g_corder.h5
+=================================================================
+==5477==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x603000006a78 at pc 0x000000762e06 bp 0x7ffeb37afbd0 sp 0x7ffeb37afbc8
+READ of size 1 at 0x603000006a78 thread T0
+    #0 0x762e05 in H5F_addr_decode_len /home/fuzzer/victim/hdf5-1.10.5/src/H5Fint.c:2486:13
+    #1 0x8cd6fa in H5HL__hdr_deserialize /home/fuzzer/victim/hdf5-1.10.5/src/H5HLcache.c:202:5
+    #2 0x8c9310 in H5HL__cache_prefix_get_final_load_size /home/fuzzer/victim/hdf5-1.10.5/src/H5HLcache.c:383:8
+    #3 0x5d91c9 in H5C_load_entry /home/fuzzer/victim/hdf5-1.10.5/src/H5C.c:6616:20
+    #4 0x5d91c9 in H5C_protect /home/fuzzer/victim/hdf5-1.10.5/src/H5C.c:2340
+    #5 0x570fd1 in H5AC_protect /home/fuzzer/victim/hdf5-1.10.5/src/H5AC.c:1351:25
+    #6 0x8c8d11 in H5HL_heapsize /home/fuzzer/victim/hdf5-1.10.5/src/H5HL.c:1033:39
+    #7 0x836150 in H5G__stab_bh_size /home/fuzzer/victim/hdf5-1.10.5/src/H5Gstab.c:677:8
+    #8 0x103d822 in H5O__group_bh_info /home/fuzzer/victim/hdf5-1.10.5/src/H5Goh.c:400:12
+    #9 0x9989e6 in H5O_get_info /home/fuzzer/victim/hdf5-1.10.5/src/H5Oint.c:2249:16
+    #10 0x81240b in H5G_loc_info_cb /home/fuzzer/victim/hdf5-1.10.5/src/H5Gloc.c:687:8
+    #11 0x83e97b in H5G__traverse_real /home/fuzzer/victim/hdf5-1.10.5/src/H5Gtraverse.c:626:16
+    #12 0x83bcad in H5G_traverse /home/fuzzer/victim/hdf5-1.10.5/src/H5Gtraverse.c:850:8
+    #13 0x81200f in H5G_loc_info /home/fuzzer/victim/hdf5-1.10.5/src/H5Gloc.c:730:8
+    #14 0x92ca04 in H5Oget_info_by_name2 /home/fuzzer/victim/hdf5-1.10.5/src/H5O.c:518:8
+    #15 0x5327f9 in traverse_cb /home/fuzzer/victim/hdf5-1.10.5/tools/lib/h5trav.c:205:12
+    #16 0x808349 in H5G_visit_cb /home/fuzzer/victim/hdf5-1.10.5/src/H5Gint.c:951:17
+    #17 0x80cf1b in H5G__link_iterate_table /home/fuzzer/victim/hdf5-1.10.5/src/H5Glink.c:484:21
+    #18 0x10215c2 in H5G__compact_iterate /home/fuzzer/victim/hdf5-1.10.5/src/H5Gcompact.c:422:21
+    #19 0x829161 in H5G__obj_iterate /home/fuzzer/victim/hdf5-1.10.5/src/H5Gobj.c:687:29
+    #20 0x80884b in H5G_visit_cb /home/fuzzer/victim/hdf5-1.10.5/src/H5Gint.c:1035:29
+    #21 0x81ffcc in H5G__node_iterate /home/fuzzer/victim/hdf5-1.10.5/src/H5Gnode.c:1002:25
+    #22 0xfd6ca5 in H5B__iterate_helper /home/fuzzer/victim/hdf5-1.10.5/src/H5B.c:1165:25
+    #23 0xfd66f2 in H5B_iterate /home/fuzzer/victim/hdf5-1.10.5/src/H5B.c:1210:21
+    #24 0x835198 in H5G__stab_iterate /home/fuzzer/victim/hdf5-1.10.5/src/H5Gstab.c:556:25
+    #25 0x829075 in H5G__obj_iterate /home/fuzzer/victim/hdf5-1.10.5/src/H5Gobj.c:697:25
+    #26 0x807136 in H5G_visit /home/fuzzer/victim/hdf5-1.10.5/src/H5Gint.c:1183:21
+    #27 0x8f5270 in H5Lvisit_by_name /home/fuzzer/victim/hdf5-1.10.5/src/H5L.c:1297:21
+    #28 0x52e3e0 in traverse /home/fuzzer/victim/hdf5-1.10.5/tools/lib/h5trav.c:291:16
+    #29 0x531a28 in h5trav_visit /home/fuzzer/victim/hdf5-1.10.5/tools/lib/h5trav.c:1063:8
+    #30 0x4ecd02 in main /home/fuzzer/victim/hdf5-1.10.5/tools/src/h5stat/h5stat.c:1823:16
+    #31 0x7fa27463482f in __libc_start_main /build/glibc-LK5gWL/glibc-2.23/csu/../csu/libc-start.c:291
+    #32 0x4194e8 in _start (/home/fuzzer/victim/hdf5-1.10.5/tools/src/h5stat/h5stat+0x4194e8)
+
+0x603000006a78 is located 0 bytes to the right of 24-byte region [0x603000006a60,0x603000006a78)
+allocated by thread T0 here:
+    #0 0x4b9618 in malloc (/home/fuzzer/victim/hdf5-1.10.5/tools/src/h5stat/h5stat+0x4b9618)
+    #1 0x926a79 in H5MM_malloc /home/fuzzer/victim/hdf5-1.10.5/src/H5MM.c:322:21
+    #2 0x570fd1 in H5AC_protect /home/fuzzer/victim/hdf5-1.10.5/src/H5AC.c:1351:25
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /home/fuzzer/victim/hdf5-1.10.5/src/H5Fint.c:2486:13 in H5F_addr_decode_len
+Shadow bytes around the buggy address:
+  0x0c067fff8cf0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c067fff8d00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c067fff8d10: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c067fff8d20: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c067fff8d30: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x0c067fff8d40: fa fa fa fa fa fa fa fa fa fa fa fa 00 00 00[fa]
+  0x0c067fff8d50: fa fa 00 00 00 00 fa fa 00 00 07 fa fa fa 00 00
+  0x0c067fff8d60: 07 fa fa fa 00 00 05 fa fa fa 00 00 05 fa fa fa
+  0x0c067fff8d70: 00 00 00 fa fa fa 00 00 00 00 fa fa 00 00 00 00
+  0x0c067fff8d80: fa fa 00 00 00 00 fa fa 00 00 00 00 fa fa 00 00
+  0x0c067fff8d90: 00 00 fa fa 00 00 05 fa fa fa 00 00 05 fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap left redzone:       fa
+  Heap right redzone:      fb
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack partial redzone:   f4
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==5477==ABORTING
+fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$
+
+
+*** h5dump (1.10.5) SEGV in function H5T_vlen_reclaim_recurse  - HDFFV-10922 ***
+
+We found the h5dump (1.10.5 version) SEGV in function H5T_vlen_reclaim_recurse. I have attached the detailed output of crash and testcase file too.
+
+Compilation steps
+CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
+AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
+Test System:  Ubuntu 16 (4.4.0-87-generic)
+
+**ASAN Output**
+entropy@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5dump$ ./h5dump -V
+h5dump: Version 1.10.5
+
+entropy@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5dump$ ./h5dump -x out/0/crashes/unique/testcase-1570093178-0-2446_h5ex_t_cmpdatt.h5
+<?xml version="1.0" encoding="UTF-8"?>
+<hdf5:HDF5-File xmlns:hdf5="http://hdfgroup.org/HDF5/XML/schema/HDF5-File.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://hdfgroup.org/HDF5/XML/schema/HDF5-File http://www.hdfgroup.org/HDF5/XML/schema/HDF5-File.xsd">
+<hdf5:RootGroup OBJ-XID="xid_96" H5Path="/">
+   <hdf5:Dataset Name="DS1" OBJ-XID="xid_800" H5Path= "/DS1" Parents="xid_96" H5ParentPaths="/">
+      <hdf5:StorageLayout>
+         <hdf5:ContiguousLayout/>
+      </hdf5:StorageLayout>
+      <hdf5:FillValueInfo FillTime="FillIfSet" AllocationTime="Late">
+         <hdf5:FillValue>
+            <hdf5:NoFill/>
+         </hdf5:FillValue>
+      </hdf5:FillValueInfo>
+      <hdf5:Dataspace>
+         <!-- unknown dataspace -->
+      </hdf5:Dataspace>
+      <hdf5:DataType>
+         <hdf5:AtomicType>
+            <hdf5:IntegerType ByteOrder="LE" Sign="true" Size="4" />
+         </hdf5:AtomicType>
+      </hdf5:DataType>
+      <hdf5:Attribute Name="A1">
+         <hdf5:Dataspace>
+            <hdf5:SimpleDataspace Ndims="1">
+               <hdf5:Dimension  DimSize="4" MaxDimSize="4"/>
+            </hdf5:SimpleDataspace>
+         </hdf5:Dataspace>
+         <hdf5:DataType>
+            <hdf5:CompoundType>
+               <hdf5:Field FieldName="Serial number">
+                  <hdf5:DataType>
+                     <hdf5:AtomicType>
+                        <hdf5:IntegerType ByteOrder="BE" Sign="true" Size="8" />
+                     </hdf5:AtomicType>
+                  </hdf5:DataType>
+               </hdf5:Field>
+               <hdf5:Field FieldName="Location">
+                  <hdf5:DataType>
+                     <hdf5:AtomicType>
+                        <hdf5:StringType Cset="H5T_CSET_ASCII" StrSize="H5T_VARIABLE" StrPad="H5T_STR_NULLTERM"/>
+                     </hdf5:AtomicType>
+                  </hdf5:DataType>
+               </hdf5:Field>
+               <hdf5:Field FieldName="Temperature (F)">
+                  <hdf5:DataType>
+                     <hdf5:AtomicType>
+                        <hdf5:FloatType ByteOrder="BE" Size="8" SignBitLocation="63" ExponentBits="11" ExponentLocation="52" MantissaBits="52" MantissaLocation="0" />
+                     </hdf5:AtomicType>
+                  </hdf5:DataType>
+               </hdf5:Field>
+               <hdf5:Field FieldName="Pressure (inHg)">
+                  <hdf5:DataType>
+                     <hdf5:AtomicType>
+                        <hdf5:FloatType ByteOrder="BE" Size="8" SignBitLocation="63" ExponentBits="11" ExponentLocation="52" MantissaBits="52" MantissaLocation="0" />
+                     </hdf5:AtomicType>
+                  </hdf5:DataType>
+               </hdf5:Field>
+            </hdf5:CompoundType>
+         </hdf5:DataType>
+         <!-- Note: format of compound data not specified -->
+         <hdf5:Data>
+ASAN:DEADLYSIGNAL
+=================================================================
+==16620==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x00000041d3ad bp 0x7ffc123501f0 sp 0x7ffc1234f950 T0)
+    #0 0x41d3ac in __asan::asan_free(void*, __sanitizer::BufferedStackTrace*, __asan::AllocType) (/home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump+0x41d3ac)
+    #1 0x4b96bc in __interceptor_cfree.localalias.0 (/home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump+0x4b96bc)
+    #2 0xf63a60 in H5T_vlen_reclaim_recurse /home/entropy/victim/hdf5-1.10.5/src/H5Tvlen.c:1075:21
+    #3 0xf632dd in H5T_vlen_reclaim_recurse /home/entropy/victim/hdf5-1.10.5/src/H5Tvlen.c:1038:24
+    #4 0xf62ce8 in H5T_vlen_reclaim /home/entropy/victim/hdf5-1.10.5/src/H5Tvlen.c:1149:8
+    #5 0xb79c25 in H5S_select_iterate /home/entropy/victim/hdf5-1.10.5/src/H5Sselect.c:1469:36
+    #6 0x6d8200 in H5D_vlen_reclaim /home/entropy/victim/hdf5-1.10.5/src/H5Dint.c:2579:17
+    #7 0x66575f in H5Dvlen_reclaim /home/entropy/victim/hdf5-1.10.5/src/H5D.c:760:17
+    #8 0x5107eb in xml_dump_data /home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump_xml.c:1921:25
+    #9 0x513a29 in xml_dump_attr /home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump_xml.c:2048:17
+    #10 0x590482 in H5A__attr_iterate_table /home/entropy/victim/hdf5-1.10.5/src/H5Aint.c:1831:29
+    #11 0x987d18 in H5O_attr_iterate_real /home/entropy/victim/hdf5-1.10.5/src/H5Oattribute.c:1296:25
+    #12 0x98c572 in H5O__attr_iterate /home/entropy/victim/hdf5-1.10.5/src/H5Oattribute.c:1341:21
+    #13 0x59781a in H5A__iterate_common /home/entropy/victim/hdf5-1.10.5/src/H5Aint.c:2596:21
+    #14 0x59781a in H5A__iterate /home/entropy/victim/hdf5-1.10.5/src/H5Aint.c:2634
+    #15 0x57f02a in H5Aiterate2 /home/entropy/victim/hdf5-1.10.5/src/H5A.c:1258:21
+    #16 0x520842 in xml_dump_dataset /home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump_xml.c:3922:13
+    #17 0x51b90c in xml_dump_all_cb /home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump_xml.c:327:17
+    #18 0x84bc27 in H5G_iterate_cb /home/entropy/victim/hdf5-1.10.5/src/H5Gint.c:794:29
+    #19 0x8653cc in H5G__node_iterate /home/entropy/victim/hdf5-1.10.5/src/H5Gnode.c:1002:25
+    #20 0x1027825 in H5B__iterate_helper /home/entropy/victim/hdf5-1.10.5/src/H5B.c:1165:25
+    #21 0x1027272 in H5B_iterate /home/entropy/victim/hdf5-1.10.5/src/H5B.c:1210:21
+    #22 0x87a598 in H5G__stab_iterate /home/entropy/victim/hdf5-1.10.5/src/H5Gstab.c:556:25
+    #23 0x86e475 in H5G__obj_iterate /home/entropy/victim/hdf5-1.10.5/src/H5Gobj.c:697:25
+    #24 0x84b247 in H5G_iterate /home/entropy/victim/hdf5-1.10.5/src/H5Gint.c:855:21
+    #25 0x938078 in H5L__iterate /home/entropy/victim/hdf5-1.10.5/src/H5L.c:3185:21
+    #26 0x938078 in H5Literate /home/entropy/victim/hdf5-1.10.5/src/H5L.c:1122
+    #27 0x517ddf in xml_dump_group /home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump_xml.c:2783:13
+    #28 0x4eef75 in main /home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump.c:1564:17
+    #29 0x7fc4f6a8b82f in __libc_start_main /build/glibc-LK5gWL/glibc-2.23/csu/../csu/libc-start.c:291
+    #30 0x419738 in _start (/home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump+0x419738)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/entropy/victim/hdf5-1.10.5/tools/src/h5dump/h5dump+0x41d3ac) in __asan::asan_free(void*, __sanitizer::BufferedStackTrace*, __asan::AllocType)
+==16620==ABORTING
+entropy@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5dump$
 
