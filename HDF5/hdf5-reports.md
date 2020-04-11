@@ -25,7 +25,8 @@ Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
 
 **ASAN Output**
-```fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$ ./h5stat -V
+```
+fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$ ./h5stat -V
 h5stat: Version 1.10.5
 
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$ ./h5stat testcase-1570044709-4-8461_h5ex_g_corder.h5
