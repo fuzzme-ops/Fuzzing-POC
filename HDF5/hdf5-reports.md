@@ -1,7 +1,7 @@
 # Description
 HDF5 is a data model, library, and file format for storing and managing data. It supports an unlimited variety of datatypes, and is designed for flexible and efficient I/O and for high volume and complex data. HDF5 is portable and is extensible, allowing applications to evolve in their use of HDF5. The HDF5 Technology suite includes tools and applications for managing, manipulating, viewing, and analyzing data in the HDF5 format. link: https://portal.hdfgroup.org/display/HDF5/HDF5
 
-Below are reported vulnerabilities along with Internal Jira bug ID.
+**Below are reported vulnerabilities along with Internal Jira bug ID.**
 ```
 Heap Buffer Overflow in h5stat 1.10.5  -  HDFFV-10921 
 h5dump (1.10.5) SEGV in function H5T_vlen_reclaim_recurse  - HDFFV-10922
@@ -14,10 +14,10 @@ h5repack (1.10.5) Double Free in function H5MM_xfree - HDFFV-10928
 
 Lets look at write-up of each bugs.
 
-*** Heap Buffer Overflow in h5stat 1.10.5  -  HDFFV-10921 ***
+## Heap Buffer Overflow in h5stat 1.10.5 - HDFFV-10921 
 We found the Heap Buffer Overflow in h5stat 1.10.5 version. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
@@ -110,11 +110,11 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5stat$
 ```
 
-*** h5dump (1.10.5) SEGV in function H5T_vlen_reclaim_recurse  - HDFFV-10922 ***
+## h5dump (1.10.5) SEGV in function H5T_vlen_reclaim_recurse - HDFFV-10922
 
 We found the h5dump (1.10.5 version) SEGV in function H5T_vlen_reclaim_recurse. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```
 CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
@@ -228,17 +228,17 @@ SUMMARY: AddressSanitizer: SEGV (/home/entropy/victim/hdf5-1.10.5/tools/src/h5du
 entropy@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5dump$
 ```
 
-*** Heap Buffer Overflow in h5dump 1.10.5 H5HG_read  - HDFFV-10293 ***
+## Heap Buffer Overflow in h5dump 1.10.5 H5HG_read - HDFFV-10293
 
 We found the Heap Buffer Overflow in h5dump 1.10.5 version. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```
 CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
-** ASAN Output **
+**ASAN Output**
 ```
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5dump$ ./h5dump -V
 h5dump: Version 1.10.5
@@ -333,17 +333,17 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 ==16878==ABORTING
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5dump$
 ```
-*** Heap Buffer Overflow in h5ls 1.10.  - HDFFV-10924 ***
+## Heap Buffer Overflow in h5ls 1.10 - HDFFV-10924
 
 We found the Heap Buffer Overflow in h5ls 1.10.5 version. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```
 CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
-** ASAN Output ***
+**ASAN Output***
 ```
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5ls$ ./h5ls -V
 h5ls: Version 1.10.5
@@ -440,18 +440,18 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.
 ```
 
-*** h5repack (1.10.5) SEGV in function H5F__close - HDFFV-10926 ***
+## h5repack (1.10.5) SEGV in function H5F__close - HDFFV-10926 
 
 We found the h5repack (1.10.5 version) SEGV in function H5F__close. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```
 CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
 
-** ASAN Output **
+**ASAN Output**
 ```
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5repack$ ./h5repack -V
 h5repack: Version 1.10.5
@@ -474,17 +474,17 @@ SUMMARY: AddressSanitizer: SEGV /home/fuzzer/victim/hdf5-1.10.5/src/H5Fint.c:193
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5repack$
 ```
 
-*** h5repack (1.10.5) SEGV in function H5T_close_real  - HDFFV-10927 ***
+## h5repack (1.10.5) SEGV in function H5T_close_real - HDFFV-10927
 
 We found the h5repack (1.10.5 version) SEGV in function H5T_close_real. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```
 CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
-** ASAN Output**
+**ASAN Output**
 ```
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5repack$ ./h5repack -V
 h5repack: Version 1.10.5
@@ -513,17 +513,17 @@ SUMMARY: AddressSanitizer: SEGV /home/fuzzer/victim/hdf5-1.10.5/src/H5T.c:3684:2
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5repack$
 ```
 
-*** h5repack (1.10.5) Double Free in function H5MM_xfree - HDFFV-10928 ***
+## h5repack (1.10.5) Double Free in function H5MM_xfree - HDFFV-10928
 
 We found the h5repack (1.10.5 version) Double Free in function H5MM_xfree. I have attached the detailed output of crash and testcase file too.
 
-Compilation steps
+**Compilation steps**
 ```
 CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
-** ASAN Output**
+**ASAN Output**
 ```
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5repack$ ./h5repack -V
 h5repack: Version 1.10.5
@@ -568,4 +568,4 @@ SUMMARY: AddressSanitizer: double-free (/home/fuzzer/victim/hdf5-1.10.5/tools/sr
 fuzzer@thickfuzzer:~/victim/hdf5-1.10.5/tools/src/h5repack$
 ```
 
-All above issues are reported on 3/4-Oct-2019.
+## All above issues are reported on 3/4-Oct-2019.
