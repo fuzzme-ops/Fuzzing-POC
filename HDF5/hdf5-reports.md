@@ -18,7 +18,8 @@ Lets look at write-up of each bugs.
 We found the Heap Buffer Overflow in h5stat 1.10.5 version. I have attached the detailed output of crash and testcase file too.
 
 **Compilation steps**
-```CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
+```
+CC=afl-clang-fast CXX=afl-clang-fast++ ASAN_OPTIONS=symbolize=1:detect_leaks=1 ./configure
 AFL_USE_ASAN=1 ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-3.8/bin/llvm-symbolizer make
 Test System:  Ubuntu 16 (4.4.0-87-generic)
 ```
