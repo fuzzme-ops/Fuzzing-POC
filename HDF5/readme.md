@@ -3,7 +3,7 @@ HDF5 is a data model, library, and file format for storing and managing data. It
 
 **Below are reported vulnerabilities along with Internal Jira bug ID.**
 ```
-Heap Buffer Overflow in h5stat 1.10.5 - HDFFV-10921 
+Heap Buffer Overflow in h5stat 1.10.5 - [HDFFV-10921](https://github.com/fuzzme-ops/Fuzzing-POC/blob/master/HDF5/HDFFV-10921.md) 
 h5dump (1.10.5) SEGV in function H5T_vlen_reclaim_recurse - HDFFV-10922
 Heap Buffer Overflow in h5dump 1.10.5 H5HG_read - HDFFV-10293
 Heap Buffer Overflow in h5ls 1.10 - HDFFV-10924
